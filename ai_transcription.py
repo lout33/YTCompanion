@@ -21,24 +21,70 @@ def download_audio(video_id):
         
         output_template = os.path.join(temp_dir, f"{video_id}.%(ext)s")
         
+        # Configure yt-dlp with multiple fallback options
         ydl_opts = {
-            'format': 'bestaudio/best',
+            'format': 'bestaudio/best',  # Try best audio first
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
                 'preferredquality': '192',
             }],
             'outtmpl': output_template,
-            'quiet': False,  # Temporarily enable output for debugging
-            'no_warnings': False  # Temporarily enable warnings for debugging
+            'quiet': False,
+            'no_warnings': False,
+            # Add multiple user agents to rotate
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+            # Add fallback formats
+            'format_sort': ['acodec:mp3', 'acodec:m4a', 'acodec:aac', 'acodec:*'],
+            # Add network settings
+            'socket_timeout': 30,
+            'retries': 10,
+            'fragment_retries': 10,
+            'retry_sleep_functions': {'fragment': lambda n: 3 * (n + 1)},
+            # Add more detailed error reporting
+            'verbose': True,
+            'extract_flat': False,
+            # Add age gate bypass
+            'age_limit': 25,
+            'cookiesfrombrowser': None,  # Disable browser cookies on Heroku
         }
         
-        # Download the file
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+        # Try multiple download attempts with different settings
+        exceptions = []
+        
+        # First attempt: Try with best audio
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+        except Exception as e:
+            exceptions.append(f"Best audio attempt failed: {str(e)}")
+            
+            # Second attempt: Try with different format
+            ydl_opts['format'] = 'worstaudio/worst'
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([url])
+            except Exception as e:
+                exceptions.append(f"Worst audio attempt failed: {str(e)}")
+                
+                # Third attempt: Try without postprocessing
+                ydl_opts.pop('postprocessors')
+                try:
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        ydl.download([url])
+                except Exception as e:
+                    exceptions.append(f"No postprocessing attempt failed: {str(e)}")
+                    raise Exception(f"All download attempts failed:\n" + "\n".join(exceptions))
         
         # Find the output file (it will have .mp3 extension after post-processing)
         output_file = os.path.join(temp_dir, f"{video_id}.mp3")
+        if not os.path.exists(output_file):
+            # Try to find any audio file that was downloaded
+            for ext in ['mp3', 'm4a', 'webm', 'opus']:
+                test_file = os.path.join(temp_dir, f"{video_id}.{ext}")
+                if os.path.exists(test_file):
+                    output_file = test_file
+                    break
         
         # Verify file exists and is not empty
         if not os.path.exists(output_file):

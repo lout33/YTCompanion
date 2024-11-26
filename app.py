@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
 from get_transcript import get_video_transcript
 from chat_handler import ChatHandler
 from ai_transcription import transcribe_audio
@@ -7,6 +8,7 @@ import re
 import os
 
 app = Flask(__name__)
+CORS(app)
 chat_handler = ChatHandler()
 
 def extract_video_id(url):

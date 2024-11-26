@@ -162,5 +162,34 @@ chatInput.addEventListener('keypress', function(e) {
     }
 });
 
+// Function to seek to specific timestamp
+function seekTo(seconds) {
+    if (player && typeof player.seekTo === 'function') {
+        player.seekTo(seconds);
+        player.playVideo();
+    }
+}
+
+// Add click handlers for timestamps
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('timestamp') || e.target.classList.contains('ai-timestamp')) {
+        const timestampText = e.target.textContent;
+        const seconds = parseTimestamp(timestampText);
+        if (!isNaN(seconds)) {
+            seekTo(seconds);
+        }
+    }
+});
+
+// Helper function to parse timestamp text to seconds
+function parseTimestamp(timestamp) {
+    const parts = timestamp.split(':').reverse();
+    let seconds = 0;
+    for (let i = 0; i < parts.length; i++) {
+        seconds += parseInt(parts[i]) * Math.pow(60, i);
+    }
+    return seconds;
+}
+
 // Initial system message
 addSystemMessage('Welcome! Please enter a YouTube URL to get started.');
