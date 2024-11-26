@@ -153,13 +153,13 @@
             </div>
             
             <div class="chat-section">
-                <h2>Chat</h2>
+                <h2>AI Chat</h2>
                 <div class="chat-messages" id="chatMessages">
                     <!-- Chat messages will appear here -->
                 </div>
                 <div class="chat-input">
-                    <input type="text" id="messageInput" placeholder="Type your message...">
-                    <button onclick="sendMessage()">Send</button>
+                    <input type="text" id="messageInput" placeholder="Ask about the video...">
+                    <button onclick="sendMessage()" id="sendButton">Send</button>
                 </div>
             </div>
 
@@ -185,6 +185,7 @@
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
         let player;
+        let isSending = false;
 
         // Initialize YouTube player
         function onYouTubeIframeAPIReady() {
@@ -205,21 +206,62 @@
             }
         }
 
-        function sendMessage() {
+        async function sendMessage() {
             const input = document.getElementById('messageInput');
             const messages = document.getElementById('chatMessages');
-            if (input.value.trim()) {
-                const message = document.createElement('p');
-                message.textContent = 'You: ' + input.value;
-                messages.appendChild(message);
+            const sendButton = document.getElementById('sendButton');
+            const message = input.value.trim();
+            
+            if (message && !isSending) {
+                // Disable input and button while sending
+                isSending = true;
+                input.disabled = true;
+                sendButton.disabled = true;
+                
+                // Add user message
+                const userMessage = document.createElement('p');
+                userMessage.innerHTML = '<strong>You:</strong> ' + message;
+                messages.appendChild(userMessage);
+                
+                try {
+                    // Send message to server
+                    const response = await fetch('/send_message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ message: message })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    // Add AI response
+                    const aiMessage = document.createElement('p');
+                    aiMessage.innerHTML = '<strong>AI:</strong> ' + data.response;
+                    messages.appendChild(aiMessage);
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    const errorMessage = document.createElement('p');
+                    errorMessage.innerHTML = '<strong>Error:</strong> Failed to get response';
+                    errorMessage.style.color = 'red';
+                    messages.appendChild(errorMessage);
+                }
+                
+                // Clear input and re-enable
                 input.value = '';
+                input.disabled = false;
+                sendButton.disabled = false;
+                isSending = false;
+                
+                // Scroll to bottom
                 messages.scrollTop = messages.scrollHeight;
             }
         }
 
         // Allow sending message with Enter key
         document.getElementById('messageInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !isSending) {
                 sendMessage();
             }
         });
