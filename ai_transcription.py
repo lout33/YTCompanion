@@ -139,19 +139,21 @@ def transcribe_audio(video_id):
                         model="whisper-1",
                         file=audio,
                         response_format="verbose_json",
-                        timestamp_granularities=["word"],
+                        timestamp_granularities=["segment"],
                         prompt=previous_text[-200:] if previous_text else None  # Use last 200 chars as context
                     )
                 
-                # Process word-level timestamps
-                if hasattr(response, 'words'):
-                    for word in response.words:
-                        absolute_start = segment['start_time'] + word.start
+                # Process segment-level timestamps
+                if hasattr(response, 'segments'):
+                    for seg in response.segments:
+                        absolute_start = segment['start_time'] + seg.start
+                        absolute_end = segment['start_time'] + seg.end
                         transcript.append({
                             'start': absolute_start,
-                            'end': segment['start_time'] + word.end,
+                            'end': absolute_end,
                             'timestamp': format_timestamp(absolute_start),
-                            'text': word.word
+                            'end_timestamp': format_timestamp(absolute_end),
+                            'text': seg.text.strip()
                         })
                     
                     # Update context for next segment
