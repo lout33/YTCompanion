@@ -27,7 +27,7 @@
             gap: 20px;
             height: calc(100vh - 200px);
         }
-        .video-section, .chat-section, .transcript-section {
+        .video-section {
             flex: 1;
             background-color: white;
             padding: 20px;
@@ -35,6 +35,43 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
+        }
+        .interactive-section {
+            flex: 1;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .toggle-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .toggle-button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            background-color: #e0e0e0;
+            color: #333;
+        }
+        .toggle-button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .chat-section, .transcript-section {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            height: calc(100% - 50px);
+        }
+        .chat-section.active, .transcript-section.active {
+            display: flex;
         }
         .form-group {
             margin-bottom: 20px;
@@ -161,20 +198,25 @@
                 </div>
             </div>
             
-            <div class="chat-section">
-                <h2>AI Chat</h2>
-                <div class="chat-messages" id="chatMessages">
-                    <!-- Chat messages will appear here -->
+            <div class="interactive-section">
+                <div class="toggle-buttons">
+                    <button class="toggle-button active" onclick="toggleSection('chat')">AI Chat</button>
+                    <button class="toggle-button" onclick="toggleSection('transcript')">Transcript</button>
                 </div>
-                <div class="chat-input">
-                    <input type="text" id="messageInput" placeholder="Ask about the video...">
-                    <button onclick="sendMessage()" id="sendButton">Send</button>
-                </div>
-            </div>
 
-            <div class="transcript-section">
-                <h2>Transcript</h2>
-                <div class="transcript">
+                <div class="chat-section active">
+                    <h2>AI Chat</h2>
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Chat messages will appear here -->
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" id="messageInput" placeholder="Ask about the video...">
+                        <button onclick="sendMessage()" id="sendButton">Send</button>
+                    </div>
+                </div>
+
+                <div class="transcript-section">
+                    <h2>Transcript</h2>
                     {% if transcript %}
                         {% for entry in transcript %}
                             <div class="transcript-entry">
@@ -281,6 +323,26 @@
                 seekTo(seconds);
             }
         });
+
+        // Add toggle functionality
+        function toggleSection(section) {
+            const chatSection = document.querySelector('.chat-section');
+            const transcriptSection = document.querySelector('.transcript-section');
+            const chatButton = document.querySelector('.toggle-button:nth-child(1)');
+            const transcriptButton = document.querySelector('.toggle-button:nth-child(2)');
+
+            if (section === 'chat') {
+                chatSection.classList.add('active');
+                transcriptSection.classList.remove('active');
+                chatButton.classList.add('active');
+                transcriptButton.classList.remove('active');
+            } else {
+                chatSection.classList.remove('active');
+                transcriptSection.classList.add('active');
+                chatButton.classList.remove('active');
+                transcriptButton.classList.add('active');
+            }
+        }
     </script>
 </body>
 </html>
