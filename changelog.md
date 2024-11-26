@@ -28,3 +28,23 @@
 ### Notes
 - Placeholder for AI integration (to be implemented)
 - Basic project structure established according to planning document
+
+## [0.2.0] - 2024-03-XX
+
+### Added
+- AI chat integration with OpenAI
+- YouTube transcript fetching functionality
+- Flask backend server implementation
+- Environment variable support for API keys
+- Chat handler with AI processing capabilities
+- Server-side API endpoints for chat and transcript
+
+### Changed
+- Moved from simple HTTP server to Flask backend
+- Enhanced project structure with proper backend/frontend separation
+
+### Dependencies
+- Added Flask for backend server
+- Added OpenAI SDK for AI chat capabilities
+- Added youtube-transcript-api for video transcripts
+- Added python-dotenv for environment management
