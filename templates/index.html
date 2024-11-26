@@ -64,14 +64,28 @@
             background-color: #4CAF50;
             color: white;
         }
-        .chat-section, .transcript-section {
+        .chat-section, .transcript-section, .ai-transcript-section {
             flex: 1;
             display: none;
             flex-direction: column;
             height: calc(100% - 50px);
         }
-        .chat-section.active, .transcript-section.active {
+        .chat-section.active, .transcript-section.active, .ai-transcript-section.active {
             display: flex;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         .form-group {
             margin-bottom: 20px;
@@ -202,6 +216,7 @@
                 <div class="toggle-buttons">
                     <button class="toggle-button active" onclick="toggleSection('chat')">AI Chat</button>
                     <button class="toggle-button" onclick="toggleSection('transcript')">Transcript</button>
+                    <button class="toggle-button" onclick="toggleSection('ai-transcript')">AI Transcript</button>
                 </div>
 
                 <div class="chat-section active">
@@ -216,7 +231,6 @@
                 </div>
 
                 <div class="transcript-section">
-                    <h2>Transcript</h2>
                     {% if transcript %}
                         {% for entry in transcript %}
                             <div class="transcript-entry">
@@ -227,6 +241,24 @@
                     {% else %}
                         No transcript available
                     {% endif %}
+                </div>
+
+                <div class="ai-transcript-section">
+                    <div class="transcript" id="aiTranscript">
+                        {% if ai_transcript %}
+                            {% for entry in ai_transcript %}
+                                <div class="transcript-entry">
+                                    <span class="timestamp" onclick="seekTo({{ entry.start }})">{{ entry.timestamp }}</span>
+                                    <span class="transcript-text">{{ entry.text }}</span>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <button onclick="generateAITranscript()" id="generateAITranscriptBtn" class="toggle-button">
+                                Generate AI Transcript
+                            </button>
+                            <span id="transcriptStatus"></span>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -324,23 +356,61 @@
             }
         });
 
-        // Add toggle functionality
+        // Update toggle functionality for three sections
         function toggleSection(section) {
-            const chatSection = document.querySelector('.chat-section');
-            const transcriptSection = document.querySelector('.transcript-section');
-            const chatButton = document.querySelector('.toggle-button:nth-child(1)');
-            const transcriptButton = document.querySelector('.toggle-button:nth-child(2)');
+            const sections = ['chat', 'transcript', 'ai-transcript'];
+            sections.forEach(s => {
+                const element = document.querySelector(`.${s}-section`);
+                const button = document.querySelector(`.toggle-button[onclick="toggleSection('${s}')"]`);
+                if (s === section) {
+                    element.classList.add('active');
+                    button.classList.add('active');
+                } else {
+                    element.classList.remove('active');
+                    button.classList.remove('active');
+                }
+            });
+        }
 
-            if (section === 'chat') {
-                chatSection.classList.add('active');
-                transcriptSection.classList.remove('active');
-                chatButton.classList.add('active');
-                transcriptButton.classList.remove('active');
-            } else {
-                chatSection.classList.remove('active');
-                transcriptSection.classList.add('active');
-                chatButton.classList.remove('active');
-                transcriptButton.classList.add('active');
+        // Add AI transcript generation functionality
+        async function generateAITranscript() {
+            const button = document.getElementById('generateAITranscriptBtn');
+            const status = document.getElementById('transcriptStatus');
+            
+            button.disabled = true;
+            status.innerHTML = '<div class="loading-spinner"></div> Generating AI transcript...';
+            
+            try {
+                const response = await fetch('/generate_ai_transcript', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        video_id: '{{ video_id }}'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    status.textContent = `Error: ${data.error}`;
+                    button.disabled = false;
+                    return;
+                }
+                
+                const aiTranscript = document.getElementById('aiTranscript');
+                aiTranscript.innerHTML = data.transcript.map(entry => `
+                    <div class="transcript-entry">
+                        <span class="timestamp" onclick="seekTo(${entry.start})">${entry.timestamp}</span>
+                        <span class="transcript-text">${entry.text}</span>
+                    </div>
+                `).join('');
+                
+                status.textContent = 'AI transcript generated successfully!';
+            } catch (error) {
+                status.textContent = `Error: ${error.message}`;
+                button.disabled = false;
             }
         }
     </script>
