@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 from get_transcript import get_video_transcript
 from chat_handler import ChatHandler
 from ai_transcription import transcribe_audio
+from summary_generator import generate_summary
 import re
 
 app = Flask(__name__)
@@ -63,8 +64,22 @@ def generate_ai_transcript():
         
         if not transcript:
             return jsonify({'error': 'Failed to generate transcript'}), 500
+        
+        # Generate summary from the AI transcript
+        try:
+            summary = generate_summary(transcript)
+            return jsonify({
+                'transcript': transcript,
+                'summary': summary
+            })
+        except Exception as summary_error:
+            print(f"Error generating summary: {str(summary_error)}")
+            # Return transcript even if summary fails
+            return jsonify({
+                'transcript': transcript,
+                'summary_error': str(summary_error)
+            })
             
-        return jsonify({'transcript': transcript})
     except Exception as e:
         import traceback
         error_msg = str(e)
@@ -83,6 +98,24 @@ def generate_ai_transcript():
             'error': user_msg,
             'details': error_msg
         }), 500
+
+@app.route('/generate_summary', methods=['POST'])
+def generate_video_summary():
+    """Generate a summary for either type of transcript."""
+    try:
+        data = request.json
+        transcript = data.get('transcript')
+        video_title = data.get('title')
+        
+        if not transcript:
+            return jsonify({'error': 'No transcript provided'}), 400
+            
+        summary = generate_summary(transcript, video_title)
+        return jsonify({'summary': summary})
+        
+    except Exception as e:
+        print(f"Error in generate_summary: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
