@@ -14,11 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
-# Expose the port the app runs on
-EXPOSE 5000
-
 # Environment variables with default values
 ENV OPENAI_API_KEY=""
 
 # Command to run the application
-CMD ["python", "app.py"]
+CMD gunicorn --bind 0.0.0.0:$PORT app:app

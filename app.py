@@ -4,6 +4,7 @@ from chat_handler import ChatHandler
 from ai_transcription import transcribe_audio
 from summary_generator import generate_summary
 import re
+import os
 
 app = Flask(__name__)
 chat_handler = ChatHandler()
@@ -118,4 +119,5 @@ def generate_video_summary():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
